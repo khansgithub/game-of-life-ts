@@ -67,20 +67,24 @@ class Grid {
             }
         }        
     }
-    get_neighbour_left(cell: Cell): Cell {
-        return this.get_cell(Math.max((cell.x - 1), 0), cell.y)
+    get_neighbour_left(cell: Cell): Cell | null {
+        if (cell.x <= 0) return null
+        return this.get_cell(cell.x - 1, cell.y)
     }
 
     get_neighbour_right(cell: Cell) {
-        return this.get_cell(Math.min((cell.x + 1), this.size-1), cell.y)
+        if (cell.x >= this.size) return null
+        return this.get_cell(cell.x + 1, cell.y)
     }
 
     get_neighbour_above(cell: Cell) {
-        return this.get_cell(cell.x, Math.max((cell.y - 1), 0))
+        if (cell.y < 0) return null
+        return this.get_cell(cell.x, cell.y - 1)
     }
 
     get_neighbour_below(cell: Cell) {
-        return this.get_cell(cell.x, Math.min((cell.y + 1), this.size-1))
+        if (cell.y >= this.size) return null
+        return this.get_cell(cell.x, cell.y + 1)
     }
 
     public get_grid():Cell[][]{
@@ -91,52 +95,43 @@ class Grid {
         return this.grid_arr[y][x]
     }
 
-    public alive_neighbours(cell: Cell, update?: boolean): number{
-        /*
-        * When `update` is true, this function is called sequentially across all the grid.
-        * The cell can be updated and evaluated at the same time by using both the `old_state` and `state` field. 
-        */
-        // let count = 0;
-        // count += (
-        //     this.get_neighbour_above(cell).old_state_as_int() +
-        //     this.get_neighbour_left(cell).old_state_as_int() +
-        //     this.get_neighbour_right(cell).state_as_int() +
-        //     this.get_neighbour_below(cell).state_as_int()
-        // );
-        // let that = this;
-        // [   
-        //     this.get_neighbour_above.bind(this),
-        //     this.get_neighbour_below.bind(this),
-        //     this.get_neighbour_left.bind(this),
-        //     this.get_neighbour_right.bind(this)
-        // ].map((f) =>{
-        //     let neighbour_cell = f(cell)
-        //     if (neighbour_cell.state == alive) count += 1
-        // })
+    public alive_neighbours(cell: Cell, update?: boolean, debug?: boolean): number{
+        if (update == false) return -1;
+        let above_count = 0;
+        let below_count = 0;
+
+        let _y = [cell.y - 1, cell.y + 1];
+        _y.forEach( (y, is_below) => {
+            if (y >= 0 && y < this.size){
+                let _x = [cell.x - 1, cell.x, cell.x + 1]
+                _x.forEach( x => {
+                    if (x < 0 || x >= this.size) return;
+                    let above_or_below_cell: Cell = this.get_cell(x, y)
+                    if (is_below == 0) above_count += above_or_below_cell.old_state_as_int()
+                    if (is_below == 1) below_count += above_or_below_cell.state_as_int()
+                })
+            }
+        });
         
-        // return count
-
-        let r = 0;;
-        if (typeof(update) !== "undefined"){
-            update = false;
+        let left = 0;
+        if (cell.x > 0){
+            let left_c = this.get_neighbour_left(cell);
+            if (left_c != null) left = left_c.old_state_as_int()
         }
 
-        if (update){
-            r += (
-                this.get_neighbour_above(cell).old_state_as_int() +
-                this.get_neighbour_left(cell).old_state_as_int()
-            );           
-        } else {
-            r += (
-                this.get_neighbour_above(cell).state_as_int() +
-                this.get_neighbour_left(cell).state_as_int()
-            );             
+        let right = 0;
+        if (cell.x < this.size){
+            let right_c = this.get_neighbour_right(cell);
+            if (right_c != null) right = right_c.state_as_int()
         }
 
-        r += (  this.get_neighbour_right(cell).state_as_int() +
-                this.get_neighbour_below(cell).state_as_int()   );
-    
-        return r;
+        if (debug == true){
+            console.log(`above_count: ${above_count}`)
+            console.log(`below_count: ${below_count}`)
+            console.log(`left: ${left}`)
+            console.log(`right: ${right}`)
+        }
+        return above_count + below_count + left + right
     }
 
     public dead_neighbours(cell: Cell, update?: boolean): number{
@@ -147,12 +142,7 @@ class Grid {
         for(let i = 0; i < this.list_of_cells.length; i++){
             let c: Cell = this.list_of_cells[i]
             let alive_neighbours = this.alive_neighbours(c, true)
-            if (i == 11){
-                c.state = alive;
-                continue;
-                console.log(c)
-                console.log(alive_neighbours)
-            }
+            
             if (c.state == alive){
                 if (alive_neighbours == 2 || alive_neighbours == 3) {
                 // Any live cell with two or three live neighbours survives.
@@ -181,30 +171,34 @@ function print_grid(grid: Grid){
     grid.get_grid().forEach(row => {
         let out_str = ""
         row.map((v) => {
-            out_str += v.state ? "●" : "○"
+            out_str += v.state ? "●" : ""
             out_str += "\t"
         })
         out_str += "\n"
         console.log(out_str)
     });
+    console.log('\n')
 }
 
 (async () => {
-    const grid = new Grid(5)
+    const grid = new Grid(10)
     let c:Cell = grid.get_cell(Math.floor(grid.size/2), Math.floor(grid.size/2))
-    c.state = alive
-    grid.get_neighbour_above(c).state = alive
-    grid.get_neighbour_below(c).state = alive
-    grid._update_list_of_cells()
-    // console.log(grid)
-    grid.grid_update()
-    print_grid(grid)
-    
-    // while (true){
-    //     console.clear()
-    //     print_grid(grid)
+    c.state = alive;
 
-    //     grid.grid_update()
-    //     await sleep(2000);
-    // }
+    [
+        grid.get_neighbour_right(c),
+        grid.get_neighbour_left(c),
+        grid.get_neighbour_below((grid.get_neighbour_left(c) as Cell)),
+        grid.get_neighbour_below((grid.get_neighbour_below(c) as Cell)),
+
+    ].forEach(( _c : Cell | null) => {
+        if (_c != null) _c.state = alive
+    })
+    print_grid(grid)
+    while (true){
+        console.clear()
+        print_grid(grid)
+        grid.grid_update()
+        await sleep(1000);
+    }
 })();
