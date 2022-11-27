@@ -1,0 +1,38 @@
+Grid {
+  grid_map: Map(0) {},
+  list_of_cells: [
+    Cell { state: false, old_state: false, x: 0, y: 0 },
+    Cell { state: false, old_state: false, x: 1, y: 0 },
+    Cell { state: false, old_state: false, x: 2, y: 0 },
+    Cell { state: false, old_state: false, x: 3, y: 0 },
+    Cell { state: false, old_state: false, x: 4, y: 0 },
+    Cell { state: false, old_state: false, x: 0, y: 1 },
+    Cell { state: false, old_state: false, x: 1, y: 1 },
+    Cell { state: true, old_state: false, x: 2, y: 1 },
+    Cell { state: true, old_state: true, x: 3, y: 1 },
+    Cell { state: false, old_state: false, x: 4, y: 1 },
+    Cell { state: false, old_state: false, x: 0, y: 2 },
+    Cell { state: false, old_state: false, x: 1, y: 2 },
+    Cell { state: true, old_state: true, x: 2, y: 2 },
+    Cell { state: false, old_state: true, x: 3, y: 2 },
+    Cell { state: true, old_state: false, x: 4, y: 2 },
+    Cell { state: false, old_state: false, x: 0, y: 3 },
+    Cell { state: false, old_state: false, x: 1, y: 3 },
+    Cell { state: true, old_state: true, x: 2, y: 3 },
+    Cell { state: false, old_state: false, x: 3, y: 3 },
+    Cell { state: false, old_state: true, x: 4, y: 3 },
+    Cell { state: false, old_state: false, x: 0, y: 4 },
+    Cell { state: false, old_state: false, x: 1, y: 4 },
+    Cell { state: false, old_state: false, x: 2, y: 4 },
+    Cell { state: false, old_state: true, x: 3, y: 4 },
+    Cell { state: false, old_state: false, x: 4, y: 4 }
+  ],
+  size: 5,
+  grid_arr: [
+    [ [Cell], [Cell], [Cell], [Cell], [Cell] ],
+    [ [Cell], [Cell], [Cell], [Cell], [Cell] ],
+    [ [Cell], [Cell], [Cell], [Cell], [Cell] ],
+    [ [Cell], [Cell], [Cell], [Cell], [Cell] ],
+    [ [Cell], [Cell], [Cell], [Cell], [Cell] ]
+  ]
+}

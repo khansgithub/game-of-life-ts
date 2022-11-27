@@ -32,7 +32,7 @@ function print_grind_neighbours(grid:Grid){
     return(grid_str)
 }
 
-var grid = new Grid(3)
+var grid = new Grid(5)
 /*
     ●  ●  ●  |  -  ●  - 
     ●  -  -  |  ●  ●  -
@@ -50,8 +50,9 @@ let frame_1 = [
     [1, 0],
     [2, 1]
 ]
+let offset = 2
 frame_1.forEach(pair => {
-    grid.get_cell(pair[1], pair[0]).state = alive
+    grid.get_cell(pair[1]+offset, pair[0]+offset).state = alive
 })
 grid._update_list_of_cells()
 // let _regex = /\W/g
@@ -63,6 +64,10 @@ grid._update_list_of_cells()
 // `
 print_grid(grid);
 console.log("---");
-grid.grid_update();
-print_grid(grid);
+
+grid.grid_update();print_grid(grid);console.log("---");
+grid.grid_update();print_grid(grid);console.log("---");
+console.log(grid);
+
+// grid.grid_update();print_grid(grid);console.log("---");
 

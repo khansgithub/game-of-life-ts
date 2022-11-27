@@ -91,6 +91,10 @@ export class Grid {
         return this.grid_arr
     }
 
+    public set_grid(g:Cell[][]){
+        this.grid_arr = g;
+    }
+
     public get_cell(x:number, y:number): Cell{
         return this.grid_arr[y][x]
     }
@@ -163,9 +167,7 @@ export class Grid {
                     c.old_state = c.state
                     c.state = alive;
                 }
-            }
-            console.log(c);
-            
+            }           
         }
     }
 }
