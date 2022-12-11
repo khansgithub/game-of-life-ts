@@ -191,6 +191,8 @@ export class Grid {
                     // Any dead cell with three live neighbours becomes a live cell.
                     c.old_state = c.state
                     c.state = alive;
+                } else {
+                    c.old_state = dead;
                 }
             }
         }
