@@ -168,6 +168,7 @@ export class Grid {
     }
 
     public propagation_rules(c: Cell, alive_neighbours: number){
+        c.old_state = c.state
         if (c.state == alive) {
             if (alive_neighbours == 2 || alive_neighbours == 3) {
                 // Any live cell with two or three live neighbours survives.
@@ -175,7 +176,6 @@ export class Grid {
                 return;
             } else {
                 // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
-                c.old_state = c.state
                 c.state = dead;
                 return;
             }
@@ -183,7 +183,6 @@ export class Grid {
         if (c.state == dead) {
             if (alive_neighbours == 3) {
                 // Any dead cell with three live neighbours becomes a live cell.
-                c.old_state = c.state
                 c.state = alive;
             }
         }

@@ -4,8 +4,8 @@ var grid = new Grid(6)
 let load_data = `
 _ _ _ _ _ _
 _ _ _ _ _ _
-_ _ O O _ _
-_ _ O O _ _
+_ _ O O O _
+_ _ O O O _
 _ _ _ _ _ _
 `
 grid.deserialise(load_data)
