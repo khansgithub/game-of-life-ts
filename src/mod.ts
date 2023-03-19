@@ -167,6 +167,28 @@ export class Grid {
         return (Math.pow(this.size, 2) - this.alive_neighbours(cell, update))
     }
 
+    public propagation_rules(c: Cell, alive_neighbours: number){
+        if (c.state == alive) {
+            if (alive_neighbours == 2 || alive_neighbours == 3) {
+                // Any live cell with two or three live neighbours survives.
+                c.old_state = c.state
+                return;
+            } else {
+                // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+                c.old_state = c.state
+                c.state = dead;
+                return;
+            }
+        }
+        if (c.state == dead) {
+            if (alive_neighbours == 3) {
+                // Any dead cell with three live neighbours becomes a live cell.
+                c.old_state = c.state
+                c.state = alive;
+            }
+        }
+    }
+
     public grid_update() {
         for (let i = 0; i < this.list_of_cells.length; i++) {
             let c: Cell = this.list_of_cells[i]
@@ -174,25 +196,8 @@ export class Grid {
             // console.log(`${c.x},${c.y}`)
             // console.log(alive_neighbours)
 
-            if (c.state == alive) {
-                if (alive_neighbours == 2 || alive_neighbours == 3) {
-                    // Any live cell with two or three live neighbours survives.
-                    c.old_state = c.state
-                    continue;
-                } else {
-                    // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
-                    c.old_state = c.state
-                    c.state = dead;
-                    continue;
-                }
-            }
-            if (c.state == dead) {
-                if (alive_neighbours == 3) {
-                    // Any dead cell with three live neighbours becomes a live cell.
-                    c.old_state = c.state
-                    c.state = alive;
-                }
-            }
+            this.propagation_rules(c, alive_neighbours)
+
         }
     }
 
