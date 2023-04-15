@@ -42,7 +42,7 @@ export class Grid {
     private grid_arr: any[][];
     private grid_map = new Map();
     public list_of_cells: Cell[] = [];
-    SERIALISE_ALIVE: string = "O";
+    SERIALISE_ALIVE: string = "o";
     SERIALISE_DEAD: string = "_";
     test: any
 
@@ -89,6 +89,13 @@ export class Grid {
         if (cell.y >= this.size) return null
         return this.get_cell(cell.x, cell.y + 1)
     }
+    
+    protected get_relative_cell_state(cell: Cell, relative_cell: Cell, disable=false){
+        if (disable) return relative_cell.state_as_int();
+        let f = [relative_cell.old_state_as_int, relative_cell.state_as_int]
+        let get_old_state = relative_cell.y < cell.y || relative_cell.x < cell.x
+        return get_old_state ? f[0]() : f[1]()
+    }
 
     public get_grid(): Cell[][] {
         return this.grid_arr
@@ -122,45 +129,19 @@ export class Grid {
         });
         return {"above": above_count, "below": below_count}
     }
+
     public alive_neighbours(cell: Cell, update?: boolean, debug?: boolean): number {
         if (update == false) return -1;
-
-        let above_count = 0;
-        let below_count = 0;
-        let _y = [cell.y - 1, cell.y + 1];
-        _y.forEach((y, is_below) => {
-            if (y >= 0 && y < this.size) {
-                let _x = [cell.x - 1, cell.x, cell.x + 1]
-                _x.forEach(x => {
-                    if (x < 0 || x >= this.size) return;
-                    let above_or_below_cell: Cell = this.get_cell(x, y)
-                    if (above_or_below_cell.y > cell.y)
-                        below_count += above_or_below_cell.state_as_int()
-                    if (above_or_below_cell.y < cell.y)
-                        above_count += above_or_below_cell.old_state_as_int()
-                })
+        let count = 0
+        let i = 0;
+        for(let x = 0; x < 3; x ++){
+            for(let y = 0; y < 3; y ++){
+                if (i == 5) continue; // current cell
+                let relative_cell: Cell = this.get_cell(x, y)
+                    count += this.get_relative_cell_state(cell, relative_cell, disable=update)
             }
-        });
-
-        let left = 0;
-        if (cell.x > 0) {
-            let left_c = this.get_neighbour_left(cell);
-            if (left_c != null) left = left_c.old_state_as_int()
         }
-
-        let right = 0;
-        if (cell.x < this.size) {
-            let right_c = this.get_neighbour_right(cell);
-            if (right_c != null) right = right_c.state_as_int()
-        }
-
-        if (debug == true) {
-            console.log(`above_count: ${above_count}`)
-            console.log(`below_count: ${below_count}`)
-            console.log(`left: ${left}`)
-            console.log(`right: ${right}`)
-        }
-        return above_count + below_count + left + right
+        return count
     }
 
     public dead_neighbours(cell: Cell, update?: boolean): number {
