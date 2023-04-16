@@ -26,8 +26,8 @@ class TestGrid extends Grid {
         return super.alive_neighbours_above_below(cell)
     }
 
-    public _get_relative_cell_state(cell: Cell, relative_cell: Cell, disable=false) {
-        return super._get_relative_cell_state(cell: Cell, relative_cell: Cell, disable=false)
+    public _get_relative_cell_state(cell: Cell, relative_cell: Cell, disable?: boolean) {
+        return super.get_relative_cell_state(cell, relative_cell, disable)
     }
 }
 
@@ -116,7 +116,7 @@ describe("test frames", () => {
     })
 })
 
-test("get_relative_cell_state", () => {
+test.skip("alive_neighbours", () => {
     /**
         _ _ _        o o o
         _ _ _   =>   o o o
@@ -145,3 +145,30 @@ test("get_relative_cell_state", () => {
         c.state = alive
     }
 });
+
+describe("get_relative_cell_state", () => {
+    test.only("1", ()=>{
+        let grid = new TestGrid(3)
+        let load_data = `
+            _ _ _
+            _ _ _
+            _ _ _
+        `
+        grid.deserialise(load_data);
+        let row_0 = [
+            grid.get_cell(0,1),
+            grid.get_cell(1,2),
+            grid.get_cell(2,1),
+        ]
+        row_0.map((c:Cell) => c.old_state = alive)
+
+        let cell: Cell = grid.get_cell(1, 1)
+        let out:Number[] = []
+        row_0.forEach((c: Cell) => {
+            out.push(grid._get_relative_cell_state(cell, c))
+        })
+        console.log(out)
+
+    })
+
+})

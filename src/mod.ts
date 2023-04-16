@@ -90,10 +90,12 @@ export class Grid {
         return this.get_cell(cell.x, cell.y + 1)
     }
     
-    protected get_relative_cell_state(cell: Cell, relative_cell: Cell, disable=false){
+    protected get_relative_cell_state(cell: Cell, relative_cell: Cell, disable?: boolean){
         if (disable) return relative_cell.state_as_int();
         let f = [relative_cell.old_state_as_int, relative_cell.state_as_int]
         let get_old_state = relative_cell.y < cell.y || relative_cell.x < cell.x
+        console.log(relative_cell, cell)
+        console.log(get_old_state)
         return get_old_state ? f[0]() : f[1]()
     }
 
@@ -138,7 +140,7 @@ export class Grid {
             for(let y = 0; y < 3; y ++){
                 if (i == 5) continue; // current cell
                 let relative_cell: Cell = this.get_cell(x, y)
-                    count += this.get_relative_cell_state(cell, relative_cell, disable=update)
+                    count += this.get_relative_cell_state(cell, relative_cell, update)
             }
         }
         return count
