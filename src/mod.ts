@@ -1,18 +1,78 @@
-export const dead = false
-export const alive = true
-export type life = true | false
+class Life {
+    readonly bool: boolean
+
+    constructor(state: boolean) {
+        this.bool = state
+    }
+
+    public toString(): string {
+        return this.bool ? "alive" : "dead"
+    }
+}
+
+export const dead = new Life(false)
+export const alive = new Life(true)
 
 export class Cell {
-    state: life = dead
-    old_state: life = this.state
+    state: Life = dead
+    new_state: Life = dead
     x = NaN
     y = NaN
-    constructor(state = false, x: number = NaN, y: number = NaN) {
-        this.state = this.old_state = state
+    grid: Grid
+
+    constructor(state: Life, x: number = NaN, y: number = NaN, g: Grid) {
+        this.grid = g
+        this.state = state
         if (!isNaN(x) && !isNaN(y)) {
             this.x = x;
             this.y = y;
         }
+    }
+
+    public progress_life(): Promise<void> {
+        /**
+         * Apply the rule to the current cell, and store the next state in new_state
+         */
+        return new Promise<void>((res, rej) => {
+            var alive_neighbours = this.grid.alive_neighbours(this)
+            this.new_state = this.rule(alive_neighbours)
+            res()
+        })
+    }
+
+    public propagate_life(): Promise<void> {
+        /**
+         * Move the cell to the next stage in life by shfiting to new_state
+         */
+        return new Promise<void>((res, rej) => {
+            this.state = this.new_state
+            res()
+        })
+    }
+
+    protected rule(alive_neighbours: number): Life {
+        var c = this
+        var new_state: Life = this.state
+        switch(c.state){
+            case alive:
+                if (alive_neighbours == 2 || alive_neighbours == 3) {
+                    // Any live cell with two or three live neighbours survives.
+                    new_state = this.state;
+                } else {
+                    // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+                    new_state = dead;
+                }
+                break;
+            case dead:
+                if (alive_neighbours == 3) {
+                    // Any dead cell with three live neighbours becomes a live cell.
+                    new_state = alive
+                }
+                break;
+            default:
+                break;
+        }
+        return new_state
     }
 
     public set_x(x: number) {
@@ -23,28 +83,21 @@ export class Cell {
         this.y = y;
     }
 
-    stringify(): string {
+    public toString(): string {
         return this.state.toString()
     }
 
     public state_as_int(): number {
-        return this.state ? 1 : 0;
+        return this.state.bool ? 1 : 0;
     }
-
-    public old_state_as_int(): number {
-        return this.old_state ? 1 : 0;
-    }
-
 }
 
 export class Grid {
     size: number;
     private grid_arr: any[][];
-    private grid_map = new Map();
     public list_of_cells: Cell[] = [];
-    SERIALISE_ALIVE: string = "o";
-    SERIALISE_DEAD: string = "_";
-    test: any
+    SERIALISE_ALIVE: string = ".";
+    SERIALISE_DEAD: string = " ";
 
     public constructor(size: number = 0) {
         this.size = size;
@@ -53,7 +106,7 @@ export class Grid {
         for (let y = 0; y < this.size; y++) {
             this.grid_arr[y] = new Array(size)
             for (let x = 0; x < this.size; x++) {
-                let cell = new Cell(dead, x, y)
+                let cell = new Cell(dead, x, y, this)
                 this.grid_arr[y][x] = cell
                 this.list_of_cells.push(cell)
             }
@@ -70,35 +123,6 @@ export class Grid {
         }
     }
 
-    get_neighbour_left(cell: Cell): Cell | null {
-        if (cell.x <= 0) return null
-        return this.get_cell(cell.x - 1, cell.y)
-    }
-
-    get_neighbour_right(cell: Cell) {
-        if (cell.x >= this.size) return null
-        return this.get_cell(cell.x + 1, cell.y)
-    }
-
-    get_neighbour_above(cell: Cell) {
-        if (cell.y < 0) return null
-        return this.get_cell(cell.x, cell.y - 1)
-    }
-
-    get_neighbour_below(cell: Cell) {
-        if (cell.y >= this.size) return null
-        return this.get_cell(cell.x, cell.y + 1)
-    }
-    
-    protected get_relative_cell_state(cell: Cell, relative_cell: Cell, disable?: boolean){
-        if (disable) return relative_cell.state_as_int();
-        let f = [relative_cell.old_state_as_int, relative_cell.state_as_int]
-        let get_old_state = relative_cell.y < cell.y || relative_cell.x < cell.x
-        console.log(relative_cell, cell)
-        console.log(get_old_state)
-        return get_old_state ? f[0]() : f[1]()
-    }
-
     public get_grid(): Cell[][] {
         return this.grid_arr
     }
@@ -111,86 +135,59 @@ export class Grid {
         return this.grid_arr[y][x]
     }
 
-    protected alive_neighbours_above_below(cell: Cell){
-        let above_count = 0;
-        let below_count = 0;
-        let _y = [cell.y - 1, cell.y + 1];
-        let _x = [cell.x - 1, cell.x, cell.x + 1]
-        _y.forEach(y => {
-            // 0 <= y < this.size-1
-            if (! (-1 < y && y < this.size) ) {console.log(`y=${y}`); return};
-            _x.forEach(x => {
-                if (! (-1 < x && x < this.size) ) {console.log(`x=${x}`); return};
-                let above_or_below_cell: Cell = this.get_cell(x, y)
-                if (above_or_below_cell.y > cell.y)
-                    below_count += above_or_below_cell.state_as_int()
-                else
-                    above_count += above_or_below_cell.old_state_as_int()
-            })
-            
-        });
-        return {"above": above_count, "below": below_count}
-    }
+    public alive_neighbours(cell: Cell): number {
+        var count = 0
+        var vectors = [
+            // top left, top, top right
+            [-1, -1],
+            [-1, 0],
+            [-1, +1],
 
-    public alive_neighbours(cell: Cell, update?: boolean, debug?: boolean): number {
-        if (update == false) return -1;
-        let count = 0
-        let i = 0;
-        for(let x = 0; x < 3; x ++){
-            for(let y = 0; y < 3; y ++){
-                if (i == 5) continue; // current cell
-                let relative_cell: Cell = this.get_cell(x, y)
-                    count += this.get_relative_cell_state(cell, relative_cell, update)
-            }
+            // left, right
+            [0, -1],
+            [0, +1],
+
+            // bottom left, bottom, bottom right
+            [+1, -1],
+            [+1, 0],
+            [+1, +1],
+        ]
+
+        for (let vec of vectors) {
+            var relative_cell_x = cell.x + vec[1]
+            var relative_cell_y = cell.y + vec[0]
+            if ([relative_cell_x, relative_cell_y].some(v => v < 0 || v >= this.size))
+                continue;
+            var relative_cell = cell.grid.get_cell(relative_cell_x, relative_cell_y)
+            if (relative_cell.state.bool) count++
         }
         return count
     }
 
     public dead_neighbours(cell: Cell, update?: boolean): number {
-        return (Math.pow(this.size, 2) - this.alive_neighbours(cell, update))
+        return (Math.pow(this.size, 2) - this.alive_neighbours(cell))
     }
 
-    public propagation_rules(c: Cell, alive_neighbours: number){
-        c.old_state = c.state
-        if (c.state == alive) {
-            if (alive_neighbours == 2 || alive_neighbours == 3) {
-                // Any live cell with two or three live neighbours survives.
-                c.old_state = c.state
-                return;
-            } else {
-                // All other live cells die in the next generation. Similarly, all other dead cells stay dead.
-                c.state = dead;
-                return;
-            }
-        }
-        if (c.state == dead) {
-            if (alive_neighbours == 3) {
-                // Any dead cell with three live neighbours becomes a live cell.
-                c.state = alive;
-            }
-        }
+    public async grid_update() {
+        var promise_list: Promise<void>[]
+
+        promise_list = this.list_of_cells.map(c => { return c.progress_life() })
+        await Promise.all<any>(promise_list)
+
+        promise_list = this.list_of_cells.map(c => { return c.propagate_life() })
+        await Promise.all<any>(promise_list)
     }
 
-    public grid_update() {
-        for (let i = 0; i < this.list_of_cells.length; i++) {
-            let c: Cell = this.list_of_cells[i]
-            let alive_neighbours = this.alive_neighbours(c, true)
-            // console.log(`${c.x},${c.y}`)
-            // console.log(alive_neighbours)
-
-            this.propagation_rules(c, alive_neighbours)
-
-        }
-    }
-
-    public deserialise(s: string) {
+    public deserialise(s: string, alive_char_input?: string) {
+        var alive_char = this.SERIALISE_ALIVE
+        if(alive_char_input) alive_char = alive_char_input
         s = s.replace(/[\W]/gm, "")
         let i = 0;
         this.list_of_cells = []
         for (let y = 0; y < this.size; y++) {
             for (let x = 0; x < this.size; x++) {
                 let string_cell = s[i]
-                let _cell: Cell = new Cell(string_cell === this.SERIALISE_ALIVE ? alive : dead, x, y)
+                let _cell: Cell = new Cell(string_cell === alive_char ? alive : dead, x, y, this)
                 this.list_of_cells.push(_cell)
                 this.grid_arr[y][x] = _cell
                 i++
@@ -201,7 +198,7 @@ export class Grid {
     public serialise(format?: boolean): string {
         let r = ""
         for (let i: number = 0; i < this.list_of_cells.length; i++) {
-            let r_str = this.list_of_cells[i].state ? this.SERIALISE_ALIVE : this.SERIALISE_DEAD
+            let r_str = this.list_of_cells[i].state.bool ? this.SERIALISE_ALIVE : this.SERIALISE_DEAD
             if (format) {
                 r_str += " "
                 if ((i + 1) % this.size == 0) r_str += "\n"
@@ -212,24 +209,19 @@ export class Grid {
     }
 
 }
+
 export function print_grid(grid: Grid) {
     let grid_str = ""
     grid.get_grid().forEach(row => {
         let out_str = ""
         row.map((cell) => {
-            out_str += cell.state ? "●" : "-"
-            // out_str += "\n"
-            // {
-            //     let _print = `${cell.x},${cell.y}`
-            //     if (cell.state == alive) _print = `<${_print}>`
-            //     out_str += _print
-            // }
+            out_str += cell.state.bool ? "●" : ""
             out_str += "\t"
         })
         out_str += "\n\n"
         grid_str += out_str
     });
-    console.log(grid_str);
 
+    console.log(grid_str);
     console.log('\n')
 }
