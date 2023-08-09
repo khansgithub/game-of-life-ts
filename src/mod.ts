@@ -10,10 +10,10 @@ class Life {
     }
 }
 
-export const dead = new Life(false)
-export const alive = new Life(true)
+const dead = new Life(false)
+const alive = new Life(true)
 
-export class Cell {
+class Cell {
     state: Life = dead
     new_state: Life = dead
     x = NaN
@@ -29,7 +29,7 @@ export class Cell {
         }
     }
 
-    public progress_life(): Promise<void> {
+    public apply_rule(): Promise<void> {
         /**
          * Apply the rule to the current cell, and store the next state in new_state
          */
@@ -40,13 +40,15 @@ export class Cell {
         })
     }
 
-    public propagate_life(): Promise<void> {
+    public update_to_new_state(): Promise<boolean> {
         /**
-         * Move the cell to the next stage in life by shfiting to new_state
+         * Move the cell to the next stage in life by shfiting to new_state.
+         * Returns True if the new_state is different to current_state
          */
-        return new Promise<void>((res, rej) => {
+        return new Promise<boolean>((res, rej) => {
+            var r:boolean = this.state != this.new_state
             this.state = this.new_state
-            res()
+            res(r)
         })
     }
 
@@ -92,7 +94,7 @@ export class Cell {
     }
 }
 
-export class Grid {
+class Grid {
     size: number;
     private grid_arr: any[][];
     public list_of_cells: Cell[] = [];
@@ -168,20 +170,25 @@ export class Grid {
         return (Math.pow(this.size, 2) - this.alive_neighbours(cell))
     }
 
-    public async grid_update() {
-        var promise_list: Promise<void>[]
+    public async grid_update(): Promise<Cell[]> {
+        if(this.size == 0) throw Error("Grid has not be initialised; size is 0")
 
-        promise_list = this.list_of_cells.map(c => { return c.progress_life() })
-        await Promise.all<any>(promise_list)
+        let lc = this.list_of_cells
+        let changed_cells:Cell[] = []
+        let apply_map = (c:Cell) => c.apply_rule()
 
-        promise_list = this.list_of_cells.map(c => { return c.propagate_life() })
-        await Promise.all<any>(promise_list)
+        await Promise.all<void>(lc.map(apply_map))
+        for (let c of lc) {
+            let change = await c.update_to_new_state()
+            if (change) changed_cells.push(c)
+        }
+        return changed_cells
     }
 
     public deserialise(s: string, alive_char_input?: string) {
         var alive_char = this.SERIALISE_ALIVE
         if(alive_char_input) alive_char = alive_char_input
-        s = s.replace(/[\W]/gm, "")
+        s = s.replace(/\s/gm, "")
         let i = 0;
         this.list_of_cells = []
         for (let y = 0; y < this.size; y++) {
@@ -210,7 +217,7 @@ export class Grid {
 
 }
 
-export function print_grid(grid: Grid) {
+function print_grid(grid: Grid) {
     let grid_str = ""
     grid.get_grid().forEach(row => {
         let out_str = ""
@@ -225,3 +232,5 @@ export function print_grid(grid: Grid) {
     console.log(grid_str);
     console.log('\n')
 }
+
+// export {dead, alive, Cell, Grid, print_grid}
